@@ -1,13 +1,12 @@
 import { Card, Container, List, Typography } from "@mui/material";
+import MDSnackbar from "components/MDSnackbar";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-import MDSnackbar from "components/MDSnackbar";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import TodoInput from "./components/TodoInput";
 import TodoItem from "./components/TodoItem";
 
 export default function TodoList() {
-  // Load todos from localStorage on component mount
   const [todos, setTodos] = useState(() => {
     try {
       const savedTodos = localStorage.getItem("todoList");
@@ -19,7 +18,7 @@ export default function TodoList() {
 
   const [inputValue, setInputValue] = useState("");
 
-  // Snackbar state
+  // State lưu thông báo
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -27,7 +26,7 @@ export default function TodoList() {
     icon: "check",
   });
 
-  // Save todos to localStorage whenever todos change
+  // Lưu todos vào localStorage
   useEffect(() => {
     try {
       localStorage.setItem("todoList", JSON.stringify(todos));
@@ -36,7 +35,7 @@ export default function TodoList() {
     }
   }, [todos]);
 
-  // Function to show snackbar
+  // Hiển thị thông báo
   const showSnackbar = (message, color = "success", icon = "check") => {
     setSnackbar({
       open: true,
@@ -46,11 +45,28 @@ export default function TodoList() {
     });
   };
 
-  // Function to close snackbar
+  // Đóng thông báo
   const closeSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
+  // Đóng thông báo sau 3 giây
+  useEffect(() => {
+    let timer;
+    if (snackbar.open) {
+      timer = setTimeout(() => {
+        closeSnackbar();
+      }, 3000);
+    }
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [snackbar.open]);
+
+  // Thêm todo
   const addTodo = () => {
     if (inputValue.trim()) {
       const newTodo = {
@@ -64,6 +80,7 @@ export default function TodoList() {
     }
   };
 
+  // Chỉnh sửa todo
   const editTodo = (id, newText) => {
     if (newText.trim()) {
       setTodos(todos.map((todo) => (todo.id === id ? { ...todo, text: newText.trim() } : todo)));
@@ -71,11 +88,13 @@ export default function TodoList() {
     }
   };
 
+  // Xóa todo
   const deleteTodo = (id) => {
     setTodos(todos.filter((todo) => todo.id !== id));
     showSnackbar("Todo đã được xóa thành công!", "error", "delete");
   };
 
+  // Chuyển trạng thái hoàn thành
   const toggleComplete = (id) => {
     setTodos(
       todos.map((todo) => (todo.id === id ? { ...todo, completed: !todo.completed } : todo))
@@ -108,7 +127,6 @@ export default function TodoList() {
         </Card>
       </Container>
 
-      {/* Snackbar for notifications */}
       <MDSnackbar
         color={snackbar.color}
         icon={snackbar.icon}
