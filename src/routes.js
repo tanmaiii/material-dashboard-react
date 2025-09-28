@@ -44,11 +44,21 @@ import Notifications from "layouts/notifications";
 import Profile from "layouts/profile";
 import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
+import TodoList from "layouts/todo-list";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
 
 const routes = [
+  {
+    type: "collapse",
+    name: "Todo List",
+    key: "todo-list",
+    icon: <FormatListBulletedIcon fontSize="small" />,
+    route: "/todo-list",
+    component: <TodoList />,
+  },
   {
     type: "collapse",
     name: "Dashboard",
