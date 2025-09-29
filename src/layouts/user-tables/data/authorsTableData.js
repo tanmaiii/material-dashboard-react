@@ -1,8 +1,11 @@
 import MDTypography from "components/MDTypography";
 import MDBadge from "components/MDBadge";
+import MDButton from "components/MDButton";
+import { Icon } from "@mui/material";
 import PropTypes from "prop-types";
+import DeleteUser from "../components/DeleteUser";
 
-const usersData = [
+export const usersData = [
   {
     id: 1,
     hoTen: "Nguyễn Văn An",
@@ -41,7 +44,7 @@ const usersData = [
   },
 ];
 
-export default function data() {
+export default function data(users = [], { onDelete, onUpdate } = {}) {
   const VaiTro = ({ vaiTro }) => {
     let color;
     switch (vaiTro) {
@@ -64,15 +67,37 @@ export default function data() {
     vaiTro: PropTypes.string.isRequired,
   };
 
+  const ActionButtons = ({ user }) => {
+    return (
+      <div style={{ display: "flex", gap: "4px", justifyContent: "center" }}>
+        <MDButton
+          variant="text"
+          color="info"
+          onClick={() => onUpdate && onUpdate(user)}
+          size="medium"
+          disabled={!onUpdate}
+        >
+          <Icon>edit</Icon>
+        </MDButton>
+        <DeleteUser user={user} onDelete={onDelete} />
+      </div>
+    );
+  };
+
+  ActionButtons.propTypes = {
+    user: PropTypes.object.isRequired,
+  };
+
   return {
     columns: [
       { Header: "ID", accessor: "id", width: "10%", align: "center" },
-      { Header: "Họ Tên", accessor: "hoTen", width: "30%", align: "left" },
-      { Header: "Email", accessor: "email", width: "35%", align: "left" },
-      { Header: "Vai Trò", accessor: "vaiTro", width: "25%", align: "center" },
+      { Header: "Họ Tên", accessor: "hoTen", width: "25%", align: "left" },
+      { Header: "Email", accessor: "email", width: "30%", align: "left" },
+      { Header: "Vai Trò", accessor: "vaiTro", width: "20%", align: "center" },
+      { Header: "Thao Tác", accessor: "action", width: "15%", align: "center" },
     ],
 
-    rows: usersData.map((user) => ({
+    rows: users.map((user) => ({
       id: (
         <MDTypography variant="caption" color="text" fontWeight="medium">
           {user.id}
@@ -89,6 +114,7 @@ export default function data() {
         </MDTypography>
       ),
       vaiTro: <VaiTro vaiTro={user.vaiTro} />,
+      action: <ActionButtons user={user} />,
     })),
   };
 }
