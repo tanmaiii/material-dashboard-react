@@ -11,8 +11,10 @@ import {
   Typography,
 } from "@mui/material";
 import MDButton from "components/MDButton";
+import { Form, Formik } from "formik";
 import PropTypes from "prop-types";
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useImperativeHandle, useState } from "react";
+import * as Yup from "yup";
 
 const style = {
   position: "absolute",
@@ -31,30 +33,59 @@ const style = {
 const vaiTroOptions = [
   { value: "User", label: "User" },
   { value: "Admin", label: "Admin" },
-  { value: "Manager", label: "Manager" },
+  { value: "Guest", label: "Guest" },
 ];
+
+// Validation Schema với Yup
+const validationSchema = Yup.object({
+  hoTen: Yup.string()
+    .trim()
+    .min(3, "Họ tên phải có ít nhất 3 ký tự")
+    .required("Họ tên là bắt buộc"),
+  email: Yup.string().trim().email("Email không hợp lệ").required("Email là bắt buộc"),
+  vaiTro: Yup.string()
+    .oneOf(["User", "Admin", "Guest"], "Vai trò không hợp lệ")
+    .required("Vai trò là bắt buộc"),
+  ngaySinh: Yup.date()
+    .max(new Date(), "Ngày sinh không thể là ngày trong tương lai")
+    .test("age", "Người dùng phải trên 18 tuổi", function (value) {
+      if (!value) return false;
+      const today = new Date();
+      const birthDate = new Date(value);
+      const age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        return age - 1 >= 18;
+      }
+      return age >= 18;
+    })
+    .required("Ngày sinh là bắt buộc"),
+});
 
 const CreateOrUpdateUser = forwardRef(
   ({ handleAddUser, handleUpdateUser, editUser, isEdit = false }, ref) => {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [formData, setFormData] = useState({
-      hoTen: "",
-      email: "",
-      vaiTro: "User",
-    });
-    const [formErrors, setFormErrors] = useState({});
 
-    useEffect(() => {
-      if (isEdit && editUser && open) {
-        setFormData({
+    // Initial values cho Formik
+    const getInitialValues = () => {
+      if (isEdit && editUser) {
+        return {
           hoTen: editUser.hoTen || "",
           email: editUser.email || "",
           vaiTro: editUser.vaiTro || "User",
-        });
+          ngaySinh: editUser.ngaySinh || "",
+        };
       }
-    }, [isEdit, editUser, open]);
+      return {
+        hoTen: "",
+        email: "",
+        vaiTro: "User",
+        ngaySinh: "",
+      };
+    };
 
     useImperativeHandle(ref, () => ({
       openModal: handleOpen,
@@ -63,78 +94,24 @@ const CreateOrUpdateUser = forwardRef(
     const handleOpen = () => {
       setOpen(true);
       setError("");
-      setFormErrors({});
     };
 
     const handleClose = () => {
       setOpen(false);
-      setFormData({
-        hoTen: "",
-        email: "",
-        vaiTro: "User",
-      });
-      setFormErrors({});
       setError("");
     };
 
-    const handleInputChange = (field) => (event) => {
-      setFormData({
-        ...formData,
-        [field]: event.target.value,
-      });
-      if (formErrors[field]) {
-        setFormErrors({
-          ...formErrors,
-          [field]: "",
-        });
-      }
-    };
-
-    const validateForm = () => {
-      const errors = {};
-
-      // Validate Họ Tên
-      if (!formData.hoTen.trim()) {
-        errors.hoTen = "Họ tên là bắt buộc";
-      } else if (formData.hoTen.trim().length < 2) {
-        errors.hoTen = "Họ tên phải có ít nhất 2 ký tự";
-      }
-
-      // Validate Email
-      if (!formData.email.trim()) {
-        errors.email = "Email là bắt buộc";
-      } else {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(formData.email)) {
-          errors.email = "Email không hợp lệ";
-        }
-      }
-
-      // Validate Vai Trò
-      if (!formData.vaiTro) {
-        errors.vaiTro = "Vai trò là bắt buộc";
-      }
-
-      setFormErrors(errors);
-      return Object.keys(errors).length === 0;
-    };
-
-    const handleSubmit = async (event) => {
-      event.preventDefault();
-
-      //Kiểm tra validate form
-      if (!validateForm()) {
-        return;
-      }
-
+    // Handle submit với Formik
+    const handleSubmit = async (values, { setSubmitting, resetForm }) => {
       setLoading(true);
       setError("");
 
       try {
         const userData = {
-          hoTen: formData.hoTen.trim(),
-          email: formData.email.trim().toLowerCase(),
-          vaiTro: formData.vaiTro,
+          hoTen: values.hoTen.trim(),
+          email: values.email.trim().toLowerCase(),
+          vaiTro: values.vaiTro,
+          ngaySinh: values.ngaySinh,
         };
 
         if (isEdit && editUser) {
@@ -142,11 +119,12 @@ const CreateOrUpdateUser = forwardRef(
             ...userData,
             id: editUser.id,
           };
-          handleUpdateUser(updatedUser);
+          await handleUpdateUser(updatedUser);
         } else {
-          handleAddUser(userData);
+          await handleAddUser(userData);
         }
 
+        resetForm();
         handleClose();
       } catch (err) {
         const errorMessage = isEdit
@@ -155,6 +133,7 @@ const CreateOrUpdateUser = forwardRef(
         setError(errorMessage);
       } finally {
         setLoading(false);
+        setSubmitting(false);
       }
     };
 
@@ -186,92 +165,131 @@ const CreateOrUpdateUser = forwardRef(
               </Alert>
             )}
 
-            <Box component="form" onSubmit={handleSubmit}>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Họ và Tên"
-                    value={formData.hoTen}
-                    onChange={handleInputChange("hoTen")}
-                    error={!!formErrors.hoTen}
-                    helperText={formErrors.hoTen}
-                    disabled={loading}
-                    placeholder="Nhập họ và tên"
-                    variant="outlined"
-                  />
-                </Grid>
+            <Formik
+              initialValues={getInitialValues()}
+              validationSchema={validationSchema}
+              onSubmit={handleSubmit}
+              enableReinitialize={true}
+            >
+              {({ values, errors, touched, handleChange, handleBlur, isSubmitting }) => (
+                <Form>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        name="hoTen"
+                        label="Họ và Tên"
+                        value={values.hoTen}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.hoTen && Boolean(errors.hoTen)}
+                        helperText={touched.hoTen && errors.hoTen}
+                        disabled={loading || isSubmitting}
+                        placeholder="Nhập họ và tên"
+                        variant="outlined"
+                      />
+                    </Grid>
 
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange("email")}
-                    error={!!formErrors.email}
-                    helperText={formErrors.email}
-                    disabled={loading}
-                    placeholder="Nhập địa chỉ email"
-                    variant="outlined"
-                  />
-                </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        name="email"
+                        label="Email"
+                        type="email"
+                        value={values.email}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.email && Boolean(errors.email)}
+                        helperText={touched.email && errors.email}
+                        disabled={loading || isSubmitting}
+                        placeholder="Nhập địa chỉ email"
+                        variant="outlined"
+                      />
+                    </Grid>
 
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    select
-                    label="Vai Trò"
-                    value={formData.vaiTro}
-                    onChange={handleInputChange("vaiTro")}
-                    error={!!formErrors.vaiTro}
-                    helperText={formErrors.vaiTro}
-                    disabled={loading}
-                    variant="outlined"
-                    sx={{
-                      "& .MuiInputBase-root": {
-                        height: 40,
-                      },
-                    }}
-                  >
-                    {vaiTroOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        select
+                        name="vaiTro"
+                        label="Vai Trò"
+                        value={values.vaiTro}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.vaiTro && Boolean(errors.vaiTro)}
+                        helperText={touched.vaiTro && errors.vaiTro}
+                        disabled={loading || isSubmitting}
+                        variant="outlined"
+                        sx={{
+                          "& .MuiInputBase-root": {
+                            height: 40,
+                          },
+                        }}
+                      >
+                        {vaiTroOptions.map((option) => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </TextField>
+                    </Grid>
 
-                <Grid item xs={12} sx={{ mt: 2 }}>
-                  <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
-                    <Button
-                      variant="outlined"
-                      onClick={handleClose}
-                      disabled={loading}
-                      sx={{ minWidth: 100, color: "red" }}
-                      color="error"
-                    >
-                      Hủy
-                    </Button>
-                    <MDButton
-                      variant="gradient"
-                      color="info"
-                      type="submit"
-                      disabled={loading}
-                      sx={{ minWidth: 100 }}
-                    >
-                      {loading ? (
-                        <CircularProgress size={20} color="inherit" />
-                      ) : isEdit ? (
-                        "Cập Nhật"
-                      ) : (
-                        "Thêm"
-                      )}
-                    </MDButton>
-                  </Box>
-                </Grid>
-              </Grid>
-            </Box>
+                    <Grid item xs={12}>
+                      <TextField
+                        fullWidth
+                        name="ngaySinh"
+                        type="date"
+                        label="Ngày sinh"
+                        value={values.ngaySinh}
+                        onChange={handleChange}
+                        onBlur={handleBlur}
+                        error={touched.ngaySinh && Boolean(errors.ngaySinh)}
+                        helperText={touched.ngaySinh && errors.ngaySinh}
+                        disabled={loading || isSubmitting}
+                        variant="outlined"
+                        InputLabelProps={{
+                          shrink: true,
+                        }}
+                        sx={{
+                          "& .MuiInputBase-root": {
+                            height: 40,
+                          },
+                        }}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sx={{ mt: 2 }}>
+                      <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
+                        <Button
+                          variant="outlined"
+                          onClick={handleClose}
+                          disabled={loading || isSubmitting}
+                          sx={{ minWidth: 100, color: "red" }}
+                          color="error"
+                        >
+                          Hủy
+                        </Button>
+                        <MDButton
+                          variant="gradient"
+                          color="info"
+                          type="submit"
+                          disabled={loading || isSubmitting}
+                          sx={{ minWidth: 100 }}
+                        >
+                          {loading || isSubmitting ? (
+                            <CircularProgress size={20} color="inherit" />
+                          ) : isEdit ? (
+                            "Cập Nhật"
+                          ) : (
+                            "Thêm"
+                          )}
+                        </MDButton>
+                      </Box>
+                    </Grid>
+                  </Grid>
+                </Form>
+              )}
+            </Formik>
           </Box>
         </Modal>
       </>
