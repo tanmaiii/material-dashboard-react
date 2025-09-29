@@ -1,5 +1,6 @@
 import {
   Card,
+  CircularProgress,
   Paper,
   Stack,
   Table,
@@ -7,6 +8,7 @@ import {
   TableCell,
   TableContainer,
   TableHead,
+  TablePagination,
   TableRow,
 } from "@mui/material";
 import MDBox from "components/MDBox";
@@ -20,8 +22,9 @@ import SearchUser from "./components/SearchUser";
 import authorsTableData, { usersData } from "./data/authorsTableData";
 
 export default function UserTables() {
-  const [users, setUsers] = useState(usersData);
-  const [filteredUsers, setFilteredUsers] = useState(usersData);
+  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchValue, setSearchValue] = useState("");
   const [editUser, setEditUser] = useState(null);
   const [snackbar, setSnackbar] = useState({
@@ -30,24 +33,135 @@ export default function UserTables() {
     color: "success",
     icon: "check",
   });
+
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const [sortBy, setSortBy] = useState(null);
+  const [sortOrder, setSortOrder] = useState("asc");
+
   const updateModalRef = useRef();
+
+  // Lấy Users từ API
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("https://jsonplaceholder.typicode.com/users");
+      const apiUsers = await response.json();
+
+      // Transform API data to match our format
+      const transformedUsers = apiUsers.map((user) => ({
+        id: user.id,
+        hoTen: user.name,
+        email: user.email,
+        vaiTro: "User",
+      }));
+
+      setAllUsers(transformedUsers);
+      setUsers(transformedUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      // Fallback to local data if API fails
+      setAllUsers(usersData);
+      setUsers(usersData);
+      setSnackbar({
+        open: true,
+        message: "Không thể tải dữ liệu từ API, sử dụng dữ liệu mẫu!",
+        color: "warning",
+        icon: "warning",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Loại bỏ ký tự tiếng việt
+  const removeVietnameseAccents = (str) => {
+    return str
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D");
+  };
+
+  // Sắp xếp Users
+  const sortUsers = (usersToSort, sortField, order) => {
+    if (!sortField) return usersToSort;
+    return [...usersToSort].sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+
+      // For Vietnamese text, remove accents for comparison
+      if (typeof aValue === "string") {
+        aValue = removeVietnameseAccents(aValue.toLowerCase());
+        bValue = removeVietnameseAccents(bValue.toLowerCase());
+      }
+
+      if (aValue < bValue) return order === "asc" ? -1 : 1;
+      if (aValue > bValue) return order === "asc" ? 1 : -1;
+      return 0;
+    });
+  };
+
+  // Lọc và xử lý Users
+  const processUsers = () => {
+    let processed = [...allUsers];
+
+    // Apply search filter
+    if (searchValue.trim()) {
+      const normalizedSearchTerm = removeVietnameseAccents(searchValue.toLowerCase());
+      processed = processed.filter((user) => {
+        const normalizedUserName = removeVietnameseAccents(user.hoTen.toLowerCase());
+        const normalizedEmail = removeVietnameseAccents(user.email.toLowerCase());
+        return (
+          normalizedUserName.includes(normalizedSearchTerm) ||
+          normalizedEmail.includes(normalizedSearchTerm)
+        );
+      });
+    }
+
+    // Apply sorting
+    processed = sortUsers(processed, sortBy, sortOrder);
+
+    return processed;
+  };
+
+  // Lấy Users phân trang
+  const getPaginatedUsers = () => {
+    const processed = processUsers();
+    const startIndex = page * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return processed.slice(startIndex, endIndex);
+  };
+
+  // Sắp xếp Users
+  const handleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(field);
+      setSortOrder("asc");
+    }
+    setPage(0); // Reset to first page when sorting
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleDelete = (userId) => {
     try {
-      setUsers((prevUsers) => {
-        const updatedUsers = prevUsers.filter((user) => user.id !== userId);
-        if (searchValue.trim()) {
-          const normalizedSearchTerm = removeVietnameseAccents(searchValue.toLowerCase());
-          const filtered = updatedUsers.filter((user) => {
-            const normalizedUserName = removeVietnameseAccents(user.hoTen.toLowerCase());
-            return normalizedUserName.includes(normalizedSearchTerm);
-          });
-          setFilteredUsers(filtered);
-        } else {
-          setFilteredUsers(updatedUsers);
-        }
-        return updatedUsers;
-      });
+      setAllUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+      setPage(0); // Reset to first page after delete
 
       setSnackbar({
         open: true,
@@ -70,31 +184,15 @@ export default function UserTables() {
     updateModalRef.current?.openModal();
   };
 
-  // Loại bỏ ký tự tiếng việt
-  const removeVietnameseAccents = (str) => {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D");
-  };
-
-  // Tìm kiếm người dùng
+  // Tìm kiếm người dùng (updated to work with new structure)
   const handleSearch = (searchTerm) => {
     setSearchValue(searchTerm);
-    if (!searchTerm.trim()) {
-      setFilteredUsers(users);
-    } else {
-      const normalizedSearchTerm = removeVietnameseAccents(searchTerm.toLowerCase());
-      const filtered = users.filter((user) => {
-        const normalizedUserName = removeVietnameseAccents(user.hoTen.toLowerCase());
-        return normalizedUserName.includes(normalizedSearchTerm);
-      });
-      setFilteredUsers(filtered);
-    }
+    setPage(0); // Reset to first page when searching
   };
 
-  const { columns, rows } = authorsTableData(filteredUsers, {
+  const processedUsers = getPaginatedUsers();
+  const totalUsers = processUsers().length;
+  const { columns, rows } = authorsTableData(processedUsers, {
     onDelete: handleDelete,
     onUpdate: handleUpdate,
   });
@@ -102,7 +200,7 @@ export default function UserTables() {
   // Thêm người dùng
   const handleAddUser = (newUser) => {
     try {
-      const existingUser = users.find((user) => user.email === newUser.email);
+      const existingUser = allUsers.find((user) => user.email === newUser.email);
       if (existingUser) {
         setSnackbar({
           open: true,
@@ -114,7 +212,7 @@ export default function UserTables() {
       }
 
       // Lấy ID lớn nhất và tạo ID mới
-      const maxId = users.length > 0 ? Math.max(...users.map((user) => user.id)) : 0;
+      const maxId = allUsers.length > 0 ? Math.max(...allUsers.map((user) => user.id)) : 0;
       const newId = maxId + 1;
 
       const newUserWithId = {
@@ -122,22 +220,12 @@ export default function UserTables() {
         id: newId,
       };
 
-      setUsers((prevUsers) => {
+      setAllUsers((prevUsers) => {
         const newUsers = [...prevUsers, newUserWithId];
-        const sortedUsers = newUsers.sort((a, b) => a.id - b.id);
-        // Tìm kiếm và lọc người dùng
-        if (searchValue.trim()) {
-          const normalizedSearchTerm = removeVietnameseAccents(searchValue.toLowerCase());
-          const filtered = sortedUsers.filter((user) => {
-            const normalizedUserName = removeVietnameseAccents(user.hoTen.toLowerCase());
-            return normalizedUserName.includes(normalizedSearchTerm);
-          });
-          setFilteredUsers(filtered);
-        } else {
-          setFilteredUsers(sortedUsers);
-        }
-        return sortedUsers;
+        return newUsers.sort((a, b) => a.id - b.id);
       });
+
+      setPage(0); // Reset to first page to show new user
 
       setSnackbar({
         open: true,
@@ -158,7 +246,7 @@ export default function UserTables() {
   //Cập nhật người dùng
   const handleUpdateUser = (updatedUser) => {
     try {
-      const existingUser = users.find(
+      const existingUser = allUsers.find(
         (user) => user.email === updatedUser.email && user.id !== updatedUser.id
       );
 
@@ -172,22 +260,9 @@ export default function UserTables() {
         return;
       }
 
-      setUsers((prevUsers) => {
-        const updatedUsers = prevUsers.map((user) =>
-          user.id === updatedUser.id ? updatedUser : user
-        );
-        if (searchValue.trim()) {
-          const normalizedSearchTerm = removeVietnameseAccents(searchValue.toLowerCase());
-          const filtered = updatedUsers.filter((user) => {
-            const normalizedUserName = removeVietnameseAccents(user.hoTen.toLowerCase());
-            return normalizedUserName.includes(normalizedSearchTerm);
-          });
-          setFilteredUsers(filtered);
-        } else {
-          setFilteredUsers(updatedUsers);
-        }
-        return updatedUsers;
-      });
+      setAllUsers((prevUsers) =>
+        prevUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user))
+      );
 
       setSnackbar({
         open: true,
@@ -227,6 +302,94 @@ export default function UserTables() {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
+  // Render sortable header
+  const renderSortableHeader = (column, index) => {
+    const isSortable = column.accessor === "hoTen" || column.accessor === "email";
+    const isActive = sortBy === column.accessor;
+    if (!isSortable) {
+      return (
+        <TableCell
+          key={index}
+          align={column.align}
+          sx={{
+            width: column.width,
+            borderBottom: "1px solid #e0e0e0",
+            backgroundColor: "#f8f9fa",
+            fontWeight: "bold",
+            fontSize: "0.875rem",
+            textTransform: "uppercase",
+            color: "#6c757d",
+            padding: "0.65rem",
+          }}
+        >
+          {column.Header}
+        </TableCell>
+      );
+    }
+
+    return (
+      <TableCell
+        key={index}
+        align={column.align}
+        sx={{
+          width: column.width,
+          borderBottom: "1px solid #e0e0e0",
+          backgroundColor: "#f8f9fa",
+          fontWeight: "bold",
+          fontSize: "0.875rem",
+          textTransform: "uppercase",
+          color: "#6c757d",
+          padding: "0.65rem",
+          cursor: "pointer",
+          "&:hover": {
+            backgroundColor: "#e9ecef",
+          },
+        }}
+        onClick={() => handleSort(column.accessor)}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: column.align === "center" ? "center" : "flex-start",
+          }}
+        >
+          {column.Header}
+          {isActive && <span style={{ marginLeft: "4px" }}>{sortOrder === "asc" ? "↑" : "↓"}</span>}
+        </div>
+      </TableCell>
+    );
+  };
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <DashboardNavbar />
+        <MDBox pt={6} pb={3}>
+          <Card>
+            <MDBox
+              mx={2}
+              mt={-3}
+              py={3}
+              px={2}
+              variant="gradient"
+              bgColor="info"
+              borderRadius="lg"
+              coloredShadow="info"
+            >
+              <MDTypography variant="h6" color="white">
+                Users Table
+              </MDTypography>
+            </MDBox>
+            <MDBox display="flex" justifyContent="center" alignItems="center" minHeight="300px">
+              <CircularProgress size={60} />
+            </MDBox>
+          </Card>
+        </MDBox>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -263,24 +426,7 @@ export default function UserTables() {
               <Table sx={{ minWidth: 650 }}>
                 <TableHead sx={{ width: "100%", display: "table-header-group" }}>
                   <TableRow>
-                    {columns.map((column, index) => (
-                      <TableCell
-                        key={index}
-                        align={column.align}
-                        sx={{
-                          width: column.width,
-                          borderBottom: "1px solid #e0e0e0",
-                          backgroundColor: "#f8f9fa",
-                          fontWeight: "bold",
-                          fontSize: "0.875rem",
-                          textTransform: "uppercase",
-                          color: "#6c757d",
-                          padding: "0.65rem",
-                        }}
-                      >
-                        {column.Header}
-                      </TableCell>
-                    ))}
+                    {columns.map((column, index) => renderSortableHeader(column, index))}
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -314,14 +460,40 @@ export default function UserTables() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={columns.length} align="center">
-                        Không có dữ liệu
+                      <TableCell colSpan={columns.length} align="center" sx={{ padding: "40px" }}>
+                        <MDTypography variant="h6" color="text" sx={{ opacity: 0.6 }}>
+                          {searchValue
+                            ? "Không tìm thấy người dùng nào phù hợp"
+                            : "Không có dữ liệu"}
+                        </MDTypography>
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
             </TableContainer>
+
+            {/* Pagination */}
+            <TablePagination
+              component="div"
+              count={totalUsers}
+              page={page}
+              onPageChange={handleChangePage}
+              rowsPerPage={rowsPerPage}
+              onRowsPerPageChange={handleChangeRowsPerPage}
+              rowsPerPageOptions={[5, 10, 25]}
+              labelRowsPerPage="Số dòng mỗi trang:"
+              labelDisplayedRows={({ from, to, count }) =>
+                `${from}–${to} trên ${count !== -1 ? count : `hơn ${to}`}`
+              }
+              sx={{
+                borderTop: "1px solid #e0e0e0",
+                ".MuiTablePagination-toolbar": {
+                  paddingLeft: "16px",
+                  paddingRight: "16px",
+                },
+              }}
+            />
           </MDBox>
         </Card>
       </MDBox>
