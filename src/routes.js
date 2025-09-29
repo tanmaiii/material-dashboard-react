@@ -36,16 +36,18 @@ Coded by www.creative-tim.com
 */
 
 // Material Dashboard 2 React layouts
-import Dashboard from "layouts/dashboard";
-import Tables from "layouts/tables";
-import Billing from "layouts/billing";
-import RTL from "layouts/rtl";
-import Notifications from "layouts/notifications";
-import Profile from "layouts/profile";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import SignIn from "layouts/authentication/sign-in";
 import SignUp from "layouts/authentication/sign-up";
+import Billing from "layouts/billing";
+import Dashboard from "layouts/dashboard";
+import Notifications from "layouts/notifications";
+import Profile from "layouts/profile";
+import RTL from "layouts/rtl";
+import Tables from "layouts/tables";
 import TodoList from "layouts/todo-list";
-import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
+import UserTables from "layouts/user-tables";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
@@ -58,6 +60,14 @@ const routes = [
     icon: <FormatListBulletedIcon fontSize="small" />,
     route: "/todo-list",
     component: <TodoList />,
+  },
+  {
+    type: "collapse",
+    name: "User Tables",
+    key: "user-tables",
+    icon: <AccountCircleIcon fontSize="small" />,
+    route: "/user-tables",
+    component: <UserTables />,
   },
   {
     type: "collapse",
