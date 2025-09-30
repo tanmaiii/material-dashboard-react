@@ -52,6 +52,7 @@ import UserTables from "layouts/user-tables";
 // @mui icons
 import Icon from "@mui/material/Icon";
 import UserApi from "layouts/user-api";
+import PuckEditor from "layouts/puck-editor";
 
 // Protected routes - require authentication
 const protectedRoutes = [
@@ -89,6 +90,15 @@ const protectedRoutes = [
     icon: <Icon fontSize="small">dashboard</Icon>,
     route: "/dashboard",
     component: <Dashboard />,
+    protected: true,
+  },
+  {
+    type: "collapse",
+    name: "Puck Editor",
+    key: "puck-editor",
+    icon: <Icon fontSize="small">dashboard</Icon>,
+    route: "/puck-editor",
+    component: <PuckEditor />,
     protected: true,
   },
   {
