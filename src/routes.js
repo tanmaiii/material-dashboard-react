@@ -129,6 +129,7 @@ const protectedRoutes = [
 ];
 
 // Public routes - do not require authentication
+// Use authenticatedRedirect: true to redirect authenticated users away from these pages
 const publicRoutes = [
   {
     type: "collapse",
@@ -138,6 +139,7 @@ const publicRoutes = [
     route: "/authentication/sign-in",
     component: <SignIn />,
     protected: false,
+    authenticatedRedirect: true, // Redirect authenticated users away from this page
   },
   {
     type: "collapse",
@@ -147,6 +149,7 @@ const publicRoutes = [
     route: "/authentication/sign-up",
     component: <SignUp />,
     protected: false,
+    authenticatedRedirect: true, // Redirect authenticated users away from this page
   },
 ];
 

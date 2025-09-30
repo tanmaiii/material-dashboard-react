@@ -47,9 +47,13 @@ import {
   setWhiteSidenav,
 } from "context";
 
+// Authentication context
+import { useAuth } from "context/authContext";
+
 function Sidenav({ color, brand, brandName, routes, ...rest }) {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentSidenav, whiteSidenav, darkMode, sidenavColor } = controller;
+  const { user, logout } = useAuth();
   const location = useLocation();
   const collapseName = location.pathname.replace("/", "");
 
@@ -179,19 +183,19 @@ function Sidenav({ color, brand, brandName, routes, ...rest }) {
         }
       />
       <List>{renderRoutes}</List>
-      <MDBox p={2} mt="auto">
-        <MDButton
-          component="a"
-          href="https://www.creative-tim.com/product/material-dashboard-pro-react"
-          target="_blank"
-          rel="noreferrer"
-          variant="gradient"
-          color={sidenavColor}
-          fullWidth
-        >
-          upgrade to pro
-        </MDButton>
-      </MDBox>
+      {user && (
+        <MDBox p={2} mt="auto">
+          <MDBox mb={1}>
+            <MDTypography variant="button" color={textColor} fontSize="0.75rem">
+              Logged in as: {user.email}
+            </MDTypography>
+          </MDBox>
+          <MDButton onClick={logout} variant="gradient" color="error" fullWidth>
+            <Icon sx={{ mr: 1 }}>logout</Icon>
+            Logout
+          </MDButton>
+        </MDBox>
+      )}
     </SidenavRoot>
   );
 }

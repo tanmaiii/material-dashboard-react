@@ -16,7 +16,10 @@ Coded by www.creative-tim.com
 import { useState } from "react";
 
 // react-router-dom components
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
+// Authentication context
+import { useAuth } from "context/authContext";
 
 // @mui material components
 import Card from "@mui/material/Card";
@@ -34,6 +37,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDInput from "components/MDInput";
 import MDButton from "components/MDButton";
+import MDAlert from "components/MDAlert";
 
 // Authentication layout components
 import BasicLayout from "layouts/authentication/components/BasicLayout";
@@ -43,8 +47,40 @@ import bgImage from "assets/images/bg-sign-in-basic.jpeg";
 
 function Basic() {
   const [rememberMe, setRememberMe] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const navigate = useNavigate();
+  const { login, loading, error, clearError } = useAuth();
 
   const handleSetRememberMe = () => setRememberMe(!rememberMe);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    if (error) {
+      clearError();
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formData.email || !formData.password) {
+      return;
+    }
+
+    const result = await login(formData.email, formData.password);
+
+    if (result.success) {
+      navigate("/dashboard");
+    }
+  };
 
   return (
     <BasicLayout image={bgImage}>
@@ -82,12 +118,45 @@ function Basic() {
           </Grid>
         </MDBox>
         <MDBox pt={4} pb={3} px={3}>
-          <MDBox component="form" role="form">
+          {error && (
             <MDBox mb={2}>
-              <MDInput type="email" label="Email" fullWidth />
+              <MDAlert color="error" dismissible onClose={clearError}>
+                {error}
+              </MDAlert>
+            </MDBox>
+          )}
+
+          <MDBox mb={2} p={2} bgcolor="grey.100" borderRadius="lg">
+            <MDTypography variant="caption" color="text" display="block">
+              Email: eve.holt@reqres.in
+            </MDTypography>
+            <MDTypography variant="caption" color="text" display="block">
+              Password: cityslicka
+            </MDTypography>
+          </MDBox>
+
+          <MDBox component="form" role="form" onSubmit={handleSubmit}>
+            <MDBox mb={2}>
+              <MDInput
+                type="email"
+                label="Email"
+                name="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                fullWidth
+                required
+              />
             </MDBox>
             <MDBox mb={2}>
-              <MDInput type="password" label="Password" fullWidth />
+              <MDInput
+                type="password"
+                label="Password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                fullWidth
+                required
+              />
             </MDBox>
             <MDBox display="flex" alignItems="center" ml={-1}>
               <Switch checked={rememberMe} onChange={handleSetRememberMe} />
@@ -102,8 +171,14 @@ function Basic() {
               </MDTypography>
             </MDBox>
             <MDBox mt={4} mb={1}>
-              <MDButton variant="gradient" color="info" fullWidth>
-                sign in
+              <MDButton
+                variant="gradient"
+                color="info"
+                fullWidth
+                type="submit"
+                disabled={loading || !formData.email || !formData.password}
+              >
+                {loading ? "Signing In..." : "Sign In"}
               </MDButton>
             </MDBox>
             <MDBox mt={3} mb={1} textAlign="center">
