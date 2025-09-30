@@ -1,19 +1,11 @@
 import { Puck } from "@measured/puck";
-import "@measured/puck/puck.css";
-import {
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  MenuItem,
-  Radio,
-  RadioGroup,
-  TextField,
-} from "@mui/material";
+import { FormControl, FormLabel, RadioGroup } from "@mui/material";
 import MDBox from "components/MDBox";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import { useState } from "react";
 import Preview from "./components/Preview";
+import "@measured/puck/puck.css";
 
 export const config = {
   components: {
@@ -26,7 +18,7 @@ export const config = {
       render: ({ label, options, defaultValue }) => (
         <FormControl fullWidth margin="normal" sx={{ px: "8px" }}>
           <FormLabel component="legend">{label}</FormLabel>
-          <select defaultValue={defaultValue} style={{ height: "40px" }}>
+          <select defaultValue={defaultValue} style={{ height: "40px", width: "100%" }}>
             {options?.map((o, i) => (
               <option key={i} value={o.value} style={{ height: "40px" }}>
                 {o.value}
