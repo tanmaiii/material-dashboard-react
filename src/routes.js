@@ -52,7 +52,8 @@ import UserTables from "layouts/user-tables";
 // @mui icons
 import Icon from "@mui/material/Icon";
 
-const routes = [
+// Protected routes - require authentication
+const protectedRoutes = [
   {
     type: "collapse",
     name: "Todo List",
@@ -60,6 +61,7 @@ const routes = [
     icon: <FormatListBulletedIcon fontSize="small" />,
     route: "/todo-list",
     component: <TodoList />,
+    protected: true,
   },
   {
     type: "collapse",
@@ -68,6 +70,7 @@ const routes = [
     icon: <AccountCircleIcon fontSize="small" />,
     route: "/user-tables",
     component: <UserTables />,
+    protected: true,
   },
   {
     type: "collapse",
@@ -76,6 +79,7 @@ const routes = [
     icon: <Icon fontSize="small">dashboard</Icon>,
     route: "/dashboard",
     component: <Dashboard />,
+    protected: true,
   },
   {
     type: "collapse",
@@ -84,6 +88,7 @@ const routes = [
     icon: <Icon fontSize="small">table_view</Icon>,
     route: "/tables",
     component: <Tables />,
+    protected: true,
   },
   {
     type: "collapse",
@@ -92,6 +97,7 @@ const routes = [
     icon: <Icon fontSize="small">receipt_long</Icon>,
     route: "/billing",
     component: <Billing />,
+    protected: true,
   },
   {
     type: "collapse",
@@ -100,6 +106,7 @@ const routes = [
     icon: <Icon fontSize="small">format_textdirection_r_to_l</Icon>,
     route: "/rtl",
     component: <RTL />,
+    protected: true,
   },
   {
     type: "collapse",
@@ -108,6 +115,7 @@ const routes = [
     icon: <Icon fontSize="small">notifications</Icon>,
     route: "/notifications",
     component: <Notifications />,
+    protected: true,
   },
   {
     type: "collapse",
@@ -116,7 +124,12 @@ const routes = [
     icon: <Icon fontSize="small">person</Icon>,
     route: "/profile",
     component: <Profile />,
+    protected: true,
   },
+];
+
+// Public routes - do not require authentication
+const publicRoutes = [
   {
     type: "collapse",
     name: "Sign In",
@@ -124,6 +137,7 @@ const routes = [
     icon: <Icon fontSize="small">login</Icon>,
     route: "/authentication/sign-in",
     component: <SignIn />,
+    protected: false,
   },
   {
     type: "collapse",
@@ -132,7 +146,11 @@ const routes = [
     icon: <Icon fontSize="small">assignment</Icon>,
     route: "/authentication/sign-up",
     component: <SignUp />,
+    protected: false,
   },
 ];
+
+// Combine all routes
+const routes = [...protectedRoutes, ...publicRoutes];
 
 export default routes;
