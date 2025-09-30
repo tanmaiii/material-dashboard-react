@@ -11,19 +11,42 @@ import {
 import MDButton from "components/MDButton";
 import MDTypography from "components/MDTypography";
 import PropTypes from "prop-types";
+import { useState, useEffect } from "react";
 
-// Typechecking props for the Preview
 Preview.propTypes = {
   data: PropTypes.object.isRequired,
 };
 
 export default function Preview({ data }) {
+  const [formValues, setFormValues] = useState({});
+
+  useEffect(() => {
+    const initialValues = {};
+    data.content?.forEach((block, i) => {
+      if (block.type === "DropdownBlock" || block.type === "RadioBlock") {
+        const label = block.props?.label || block.label || "";
+        const defaultValue = block.props?.defaultValue || block.defaultValue || "";
+        if (label && defaultValue) {
+          initialValues[`${label}-${i}`] = defaultValue;
+        }
+      }
+    });
+    setFormValues(initialValues);
+  }, [data.content]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const values = Object.fromEntries(formData.entries());
     console.log("Submitted values:", values);
     alert("Submitted values:" + JSON.stringify(values));
+  };
+
+  const handleValueChange = (fieldName, value) => {
+    setFormValues((prev) => ({
+      ...prev,
+      [fieldName]: value,
+    }));
   };
 
   return (
@@ -35,22 +58,39 @@ export default function Preview({ data }) {
       >
         {data.content?.map((block, i) => {
           if (block.type === "DropdownBlock") {
+            const label = block.props?.label || block.label || "";
+            const defaultValue = block.props?.defaultValue || block.defaultValue || "";
+            const options = block.props?.options || block.options || [];
+
+            console.log(
+              `DropdownBlock ${i} - label:`,
+              label,
+              "defaultValue:",
+              defaultValue,
+              "options:",
+              options
+            );
+
+            const fieldName = `${label}-${i}`;
+            const currentValue = formValues[fieldName] || defaultValue;
+
             return (
               <FormControl key={i} fullWidth margin="normal">
                 <TextField
                   fullWidth
                   select
                   variant="outlined"
-                  defaultValue={block.props?.defaultValue || ""}
-                  label={block.props?.label || ""}
-                  name={`${block.props?.label}-${i}`}
+                  value={currentValue}
+                  onChange={(e) => handleValueChange(fieldName, e.target.value)}
+                  label={label}
+                  name={fieldName}
                   sx={{
                     "& .MuiInputBase-root": {
                       height: 40,
                     },
                   }}
                 >
-                  {block.props?.options?.map((o, j) => (
+                  {options?.map((o, j) => (
                     <MenuItem key={j} value={o.value}>
                       {o.value}
                     </MenuItem>
@@ -60,14 +100,31 @@ export default function Preview({ data }) {
             );
           }
           if (block.type === "RadioBlock") {
+            const label = block.props?.label || block.label || "";
+            const defaultValue = block.props?.defaultValue || block.defaultValue || "";
+            const options = block.props?.options || block.options || [];
+
+            console.log(
+              `RadioBlock ${i} - label:`,
+              label,
+              "defaultValue:",
+              defaultValue,
+              "options:",
+              options
+            );
+
+            const fieldName = `${label}-${i}`;
+            const currentValue = formValues[fieldName] || defaultValue;
+
             return (
               <FormControl key={i} component="fieldset" margin="normal">
-                <FormLabel component="legend">{block.props?.label || ""}</FormLabel>
+                <FormLabel component="legend">{label}</FormLabel>
                 <RadioGroup
-                  name={`${block.props?.label}-${i}`}
-                  defaultValue={block.props?.defaultValue || ""}
+                  name={fieldName}
+                  value={currentValue}
+                  onChange={(e) => handleValueChange(fieldName, e.target.value)}
                 >
-                  {block.props?.options?.map((o, j) => (
+                  {options?.map((o, j) => (
                     <FormControlLabel key={j} value={o.value} control={<Radio />} label={o.value} />
                   ))}
                 </RadioGroup>
