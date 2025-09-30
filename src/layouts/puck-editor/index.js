@@ -31,7 +31,13 @@ export const config = {
             variant="outlined"
             defaultValue={defaultValue}
             label={label}
-            sx={{ "& .MuiInputBase-root": { height: 40 } }}
+            sx={{
+              "& .MuiInputBase-root": { height: 40 },
+              "& .MuiSelect-icon": {
+                fontSize: "1.25rem",
+                right: "8px",
+              },
+            }}
           >
             {options?.map((o, i) => (
               <MenuItem key={i} value={o.value}>
@@ -53,7 +59,20 @@ export const config = {
           <FormLabel component="legend">{label}</FormLabel>
           <RadioGroup defaultValue={defaultValue}>
             {options?.map((o, i) => (
-              <FormControlLabel key={i} value={o.value} control={<Radio />} label={o.value} />
+              <FormControlLabel
+                key={i}
+                value={o.value}
+                control={
+                  <Radio
+                    sx={{
+                      "& .MuiSvgIcon-root": {
+                        fontSize: "1.25rem",
+                      },
+                    }}
+                  />
+                }
+                label={o.value}
+              />
             ))}
           </RadioGroup>
         </FormControl>

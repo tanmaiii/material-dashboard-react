@@ -11,7 +11,7 @@ import {
 import MDButton from "components/MDButton";
 import MDTypography from "components/MDTypography";
 import PropTypes from "prop-types";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 Preview.propTypes = {
   data: PropTypes.object.isRequired,
@@ -88,6 +88,10 @@ export default function Preview({ data }) {
                     "& .MuiInputBase-root": {
                       height: 40,
                     },
+                    "& .MuiSelect-icon": {
+                      fontSize: "1.25rem",
+                      right: "8px",
+                    },
                   }}
                 >
                   {options?.map((o, j) => (
@@ -125,7 +129,20 @@ export default function Preview({ data }) {
                   onChange={(e) => handleValueChange(fieldName, e.target.value)}
                 >
                   {options?.map((o, j) => (
-                    <FormControlLabel key={j} value={o.value} control={<Radio />} label={o.value} />
+                    <FormControlLabel
+                      key={j}
+                      value={o.value}
+                      control={
+                        <Radio
+                          sx={{
+                            "& .MuiSvgIcon-root": {
+                              fontSize: "1.25rem",
+                            },
+                          }}
+                        />
+                      }
+                      label={o.value}
+                    />
                   ))}
                 </RadioGroup>
               </FormControl>
