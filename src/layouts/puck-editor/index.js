@@ -36,6 +36,7 @@ export const config = {
               "& .MuiSelect-icon": {
                 fontSize: "1.25rem",
                 right: "8px",
+                display: "none",
               },
             }}
           >
@@ -67,6 +68,7 @@ export const config = {
                     sx={{
                       "& .MuiSvgIcon-root": {
                         fontSize: "1.25rem",
+                        display: "none",
                       },
                     }}
                   />
