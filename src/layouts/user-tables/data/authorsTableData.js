@@ -51,7 +51,7 @@ export default function data(users = [], { onDelete, onUpdate } = {}) {
       case "Admin":
         color = "error";
         break;
-      case "Manager":
+      case "Guest":
         color = "warning";
         break;
       case "User":
