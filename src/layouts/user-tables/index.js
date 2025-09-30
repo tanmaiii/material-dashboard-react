@@ -185,6 +185,7 @@ export default function UserTables() {
               handleSort={handleSort}
               sortBy={sortBy}
               sortOrder={sortOrder}
+              onUpdateUser={handleUpdateUser}
             />
 
             {/* Pagination */}

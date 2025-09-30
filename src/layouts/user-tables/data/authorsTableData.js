@@ -99,6 +99,7 @@ export default function data(users = [], { onDelete, onUpdate } = {}) {
     ],
 
     rows: users.map((user) => ({
+      originalData: user, // Thêm dữ liệu gốc để dùng cho inline editing
       id: (
         <MDTypography variant="caption" color="text" fontWeight="medium">
           {user.id}
