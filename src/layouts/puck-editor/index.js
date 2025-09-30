@@ -24,28 +24,15 @@ export const config = {
         defaultValue: { type: "text" },
       },
       render: ({ label, options, defaultValue }) => (
-        <FormControl fullWidth margin="normal">
-          <TextField
-            fullWidth
-            select
-            variant="outlined"
-            defaultValue={defaultValue}
-            label={label}
-            sx={{
-              "& .MuiInputBase-root": { height: 40 },
-              "& .MuiSelect-icon": {
-                fontSize: "1.25rem",
-                right: "8px",
-                display: "none !important",
-              },
-            }}
-          >
+        <FormControl fullWidth margin="normal" sx={{ px: "8px" }}>
+          <FormLabel component="legend">{label}</FormLabel>
+          <select defaultValue={defaultValue} style={{ height: "40px" }}>
             {options?.map((o, i) => (
-              <MenuItem key={i} value={o.value}>
+              <option key={i} value={o.value} style={{ height: "40px" }}>
                 {o.value}
-              </MenuItem>
+              </option>
             ))}
-          </TextField>
+          </select>
         </FormControl>
       ),
     },
@@ -56,25 +43,14 @@ export const config = {
         defaultValue: { type: "text" },
       },
       render: ({ label, options, defaultValue }) => (
-        <FormControl component="fieldset" margin="normal">
+        <FormControl component="fieldset" margin="normal" sx={{ px: "8px" }}>
           <FormLabel component="legend">{label}</FormLabel>
           <RadioGroup defaultValue={defaultValue}>
             {options?.map((o, i) => (
-              <FormControlLabel
-                key={i}
-                value={o.value}
-                control={
-                  <Radio
-                    sx={{
-                      "& .MuiSvgIcon-root": {
-                        fontSize: "1.25rem",
-                        display: "none !important",
-                      },
-                    }}
-                  />
-                }
-                label={o.value}
-              />
+              <label key={i}>
+                <input type="radio" name={label} value={o.value} style={{ marginRight: "8px" }} />
+                {o.value}
+              </label>
             ))}
           </RadioGroup>
         </FormControl>
