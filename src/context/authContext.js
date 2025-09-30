@@ -10,20 +10,27 @@ export function useAuth() {
 
 export const AuthContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check if user has valid token on app initialization
-    if (authService.isAuthenticated()) {
-      const token = authService.getToken();
-      const storedUser = localStorage.getItem("user");
+    // Initialize auth state on app load
+    try {
+      const isAuthed = authService.isAuthenticated();
+      if (isAuthed) {
+        const token = authService.getToken();
+        const storedUser = localStorage.getItem("user");
 
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        } else if (token) {
+          setUser({ token, authenticated: true });
+        }
       } else {
-        setUser({ token, authenticated: true });
+        setUser(null);
       }
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -78,7 +85,7 @@ export const AuthContextProvider = ({ children }) => {
     login,
     logout,
     clearError,
-    isAuthenticated: authService.isAuthenticated(),
+    isAuthenticated: !!user,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

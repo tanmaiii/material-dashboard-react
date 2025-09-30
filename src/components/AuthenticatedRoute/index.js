@@ -8,7 +8,12 @@ import PropTypes from "prop-types";
  * Used to prevent logged-in users from accessing authentication pages
  */
 const AuthenticatedRoute = ({ children }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  // Wait for auth initialization
+  if (loading) {
+    return null;
+  }
 
   // If user is authenticated, redirect to dashboard
   if (user) {
