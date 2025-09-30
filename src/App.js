@@ -186,7 +186,7 @@ export default function App() {
             {layout === "vr" && <Configurator />}
             <Routes>
               {getRoutes(routes)}
-              <Route path="*" element={<Navigate to="/todo-list" />} />
+              <Route path="*" element={<Navigate to="/user-api" />} />
             </Routes>
           </ThemeProvider>
         </CacheProvider>
@@ -210,7 +210,7 @@ export default function App() {
           {layout === "vr" && <Configurator />}
           <Routes>
             {getRoutes(routes)}
-            <Route path="*" element={<Navigate to="/todo-list" />} />
+            <Route path="*" element={<Navigate to="/user-api" />} />
           </Routes>
         </ThemeProvider>
       )}

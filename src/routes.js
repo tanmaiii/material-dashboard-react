@@ -51,6 +51,7 @@ import UserTables from "layouts/user-tables";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
+import UserApi from "layouts/user-api";
 
 // Protected routes - require authentication
 const protectedRoutes = [
@@ -70,6 +71,15 @@ const protectedRoutes = [
     icon: <AccountCircleIcon fontSize="small" />,
     route: "/user-tables",
     component: <UserTables />,
+    protected: true,
+  },
+  {
+    type: "collapse",
+    name: "User API",
+    key: "user-api",
+    icon: <AccountCircleIcon fontSize="small" />,
+    route: "/user-api",
+    component: <UserApi />,
     protected: true,
   },
   {
