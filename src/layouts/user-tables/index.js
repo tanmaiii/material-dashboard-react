@@ -4,138 +4,47 @@ import MDSnackbar from "components/MDSnackbar";
 import MDTypography from "components/MDTypography";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import { useUserStore } from "store/userStore";
 import CreateOrUpdateUser from "./components/CreateOrUpdateUser";
 import SearchUser from "./components/SearchUser";
 import TableUser from "./components/TableUser";
-import authorsTableData, { usersData } from "./data/authorsTableData";
+import authorsTableData from "./data/authorsTableData";
 
 export default function UserTables() {
-  const [users, setUsers] = useState([]);
-  const [allUsers, setAllUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searchValue, setSearchValue] = useState("");
-  const [editUser, setEditUser] = useState(null);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    color: "success",
-    icon: "check",
-  });
+  const loading = useUserStore((state) => state.loading);
+  const searchValue = useUserStore((state) => state.searchValue);
+  const editUser = useUserStore((state) => state.editUser);
+  const snackbar = useUserStore((state) => state.snackbar);
+  const page = useUserStore((state) => state.page);
+  const rowsPerPage = useUserStore((state) => state.rowsPerPage);
+  const sortBy = useUserStore((state) => state.sortBy);
+  const sortOrder = useUserStore((state) => state.sortOrder);
 
-  const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
-
-  const [sortBy, setSortBy] = useState(null);
-  const [sortOrder, setSortOrder] = useState("asc");
+  const fetchUsers = useUserStore((state) => state.fetchUsers);
+  const setSort = useUserStore((state) => state.setSort);
+  const setPage = useUserStore((state) => state.setPage);
+  const setRowsPerPage = useUserStore((state) => state.setRowsPerPage);
+  const deleteUser = useUserStore((state) => state.deleteUser);
+  const setEditUser = useUserStore((state) => state.setEditUser);
+  const setSearchValue = useUserStore((state) => state.setSearchValue);
+  const getPaginatedUsers = useUserStore((state) => state.getPaginatedUsers);
+  const getTotalUsers = useUserStore((state) => state.getTotalUsers);
+  const addUser = useUserStore((state) => state.addUser);
+  const updateUser = useUserStore((state) => state.updateUser);
+  const setSnackbar = useUserStore((state) => state.setSnackbar);
+  const closeSnackbar = useUserStore((state) => state.closeSnackbar);
 
   const updateModalRef = useRef();
 
   // Lấy Users từ API
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("https://jsonplaceholder.typicode.com/users");
-      const apiUsers = await response.json();
-
-      // Transform API data to match our format
-      const transformedUsers = apiUsers.map((user) => ({
-        id: user.id,
-        hoTen: user.name,
-        email: user.email,
-        vaiTro: "User",
-      }));
-
-      setAllUsers(transformedUsers);
-      setUsers(transformedUsers);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      // Fallback to local data if API fails
-      setAllUsers(usersData);
-      setUsers(usersData);
-      setSnackbar({
-        open: true,
-        message: "Không thể tải dữ liệu từ API, sử dụng dữ liệu mẫu!",
-        color: "warning",
-        icon: "warning",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
     fetchUsers();
-  }, []);
-
-  // Loại bỏ ký tự tiếng việt
-  const removeVietnameseAccents = (str) => {
-    return str
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/đ/g, "d")
-      .replace(/Đ/g, "D");
-  };
-
-  // Sắp xếp Users
-  const sortUsers = (usersToSort, sortField, order) => {
-    if (!sortField) return usersToSort;
-    return [...usersToSort].sort((a, b) => {
-      let aValue = a[sortField];
-      let bValue = b[sortField];
-
-      // For Vietnamese text, remove accents for comparison
-      if (typeof aValue === "string") {
-        aValue = removeVietnameseAccents(aValue.toLowerCase());
-        bValue = removeVietnameseAccents(bValue.toLowerCase());
-      }
-
-      if (aValue < bValue) return order === "asc" ? -1 : 1;
-      if (aValue > bValue) return order === "asc" ? 1 : -1;
-      return 0;
-    });
-  };
-
-  // Lọc và xử lý Users
-  const processUsers = () => {
-    let processed = [...allUsers];
-
-    // Apply search filter
-    if (searchValue.trim()) {
-      const normalizedSearchTerm = removeVietnameseAccents(searchValue.toLowerCase());
-      processed = processed.filter((user) => {
-        const normalizedUserName = removeVietnameseAccents(user.hoTen.toLowerCase());
-        const normalizedEmail = removeVietnameseAccents(user.email.toLowerCase());
-        return (
-          normalizedUserName.includes(normalizedSearchTerm) ||
-          normalizedEmail.includes(normalizedSearchTerm)
-        );
-      });
-    }
-
-    // Apply sorting
-    processed = sortUsers(processed, sortBy, sortOrder);
-
-    return processed;
-  };
-
-  // Lấy Users phân trang
-  const getPaginatedUsers = () => {
-    const processed = processUsers();
-    const startIndex = page * rowsPerPage;
-    const endIndex = startIndex + rowsPerPage;
-    return processed.slice(startIndex, endIndex);
-  };
+  }, [fetchUsers]);
 
   // Sắp xếp Users
   const handleSort = (field) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
-    } else {
-      setSortBy(field);
-      setSortOrder("asc");
-    }
-    setPage(0); // Reset to first page when sorting
+    setSort(field);
   };
 
   const handleChangePage = (event, newPage) => {
@@ -144,20 +53,11 @@ export default function UserTables() {
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
   };
 
   const handleDelete = (userId) => {
     try {
-      setAllUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
-      setPage(0); // Reset to first page after delete
-
-      setSnackbar({
-        open: true,
-        message: "Đã xóa người dùng thành công!",
-        color: "success",
-        icon: "check",
-      });
+      deleteUser(userId);
     } catch (error) {
       setSnackbar({
         open: true,
@@ -173,14 +73,13 @@ export default function UserTables() {
     updateModalRef.current?.openModal();
   };
 
-  // Tìm kiếm người dùng (updated to work with new structure)
+  // Tìm kiếm người dùng
   const handleSearch = (searchTerm) => {
     setSearchValue(searchTerm);
-    setPage(0); // Reset to first page when searching
   };
 
   const processedUsers = getPaginatedUsers();
-  const totalUsers = processUsers().length;
+  const totalUsers = getTotalUsers();
   const { columns, rows } = authorsTableData(processedUsers, {
     onDelete: handleDelete,
     onUpdate: handleUpdate,
@@ -189,39 +88,7 @@ export default function UserTables() {
   // Thêm người dùng
   const handleAddUser = (newUser) => {
     try {
-      const existingUser = allUsers.find((user) => user.email === newUser.email);
-      if (existingUser) {
-        setSnackbar({
-          open: true,
-          message: "Email này đã tồn tại trong hệ thống!",
-          color: "error",
-          icon: "close",
-        });
-        return;
-      }
-
-      // Lấy ID lớn nhất và tạo ID mới
-      const maxId = allUsers.length > 0 ? Math.max(...allUsers.map((user) => user.id)) : 0;
-      const newId = maxId + 1;
-
-      const newUserWithId = {
-        ...newUser,
-        id: newId,
-      };
-
-      setAllUsers((prevUsers) => {
-        const newUsers = [...prevUsers, newUserWithId];
-        return newUsers.sort((a, b) => a.id - b.id);
-      });
-
-      setPage(0); // Reset to first page to show new user
-
-      setSnackbar({
-        open: true,
-        message: `Đã thêm người dùng ${newUserWithId.hoTen} (ID: ${newUserWithId.id}) thành công!`,
-        color: "success",
-        icon: "check",
-      });
+      addUser(newUser);
     } catch (error) {
       setSnackbar({
         open: true,
@@ -235,32 +102,7 @@ export default function UserTables() {
   //Cập nhật người dùng
   const handleUpdateUser = (updatedUser) => {
     try {
-      const existingUser = allUsers.find(
-        (user) => user.email === updatedUser.email && user.id !== updatedUser.id
-      );
-
-      if (existingUser) {
-        setSnackbar({
-          open: true,
-          message: "Email này đã tồn tại trong hệ thống!",
-          color: "error",
-          icon: "close",
-        });
-        return;
-      }
-
-      setAllUsers((prevUsers) =>
-        prevUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user))
-      );
-
-      setSnackbar({
-        open: true,
-        message: `Đã cập nhật người dùng ${updatedUser.hoTen} thành công!`,
-        color: "success",
-        icon: "check",
-      });
-
-      setEditUser(null);
+      updateUser(updatedUser);
     } catch (error) {
       setSnackbar({
         open: true,
@@ -271,24 +113,8 @@ export default function UserTables() {
     }
   };
 
-  // Đóng thông báo sau 3 giây
-  useEffect(() => {
-    let timer;
-    if (snackbar.open) {
-      timer = setTimeout(() => {
-        closeSnackbar();
-      }, 3000);
-    }
-
-    return () => {
-      if (timer) {
-        clearTimeout(timer);
-      }
-    };
-  }, [snackbar.open]);
-
-  const closeSnackbar = () => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
+  const handleCloseSnackbar = () => {
+    closeSnackbar();
   };
 
   if (loading) {
@@ -393,7 +219,7 @@ export default function UserTables() {
         title="Thông báo"
         content={snackbar.message}
         open={snackbar.open}
-        close={closeSnackbar}
+        close={handleCloseSnackbar}
       />
     </DashboardLayout>
   );

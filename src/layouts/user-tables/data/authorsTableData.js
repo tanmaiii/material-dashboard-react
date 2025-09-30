@@ -93,6 +93,7 @@ export default function data(users = [], { onDelete, onUpdate } = {}) {
       { Header: "ID", accessor: "id", width: "10%", align: "center" },
       { Header: "Họ Tên", accessor: "hoTen", width: "25%", align: "left" },
       { Header: "Email", accessor: "email", width: "30%", align: "left" },
+      { Header: "Ngày Sinh", accessor: "ngaySinh", width: "30%", align: "left" },
       { Header: "Vai Trò", accessor: "vaiTro", width: "20%", align: "center" },
       { Header: "Thao Tác", accessor: "action", width: "15%", align: "center" },
     ],
@@ -106,6 +107,11 @@ export default function data(users = [], { onDelete, onUpdate } = {}) {
       hoTen: (
         <MDTypography variant="button" color="text" fontWeight="medium">
           {user.hoTen}
+        </MDTypography>
+      ),
+      ngaySinh: (
+        <MDTypography variant="button" color="text" fontWeight="medium">
+          {user.ngaySinh}
         </MDTypography>
       ),
       email: (

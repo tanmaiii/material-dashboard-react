@@ -69,6 +69,17 @@ const CreateOrUpdateUser = forwardRef(
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
+    // Hàm tính toán ngày sinh mặc định (đủ 18 tuổi)
+    const getDefaultBirthDate = () => {
+      const today = new Date();
+      const eighteenYearsAgo = new Date(
+        today.getFullYear() - 18,
+        today.getMonth(),
+        today.getDate()
+      );
+      return eighteenYearsAgo.toISOString().split("T")[0]; // Format YYYY-MM-DD
+    };
+
     // Initial values cho Formik
     const getInitialValues = () => {
       if (isEdit && editUser) {
@@ -83,7 +94,7 @@ const CreateOrUpdateUser = forwardRef(
         hoTen: "",
         email: "",
         vaiTro: "User",
-        ngaySinh: "",
+        ngaySinh: getDefaultBirthDate(),
       };
     };
 
