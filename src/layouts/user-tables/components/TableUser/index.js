@@ -26,10 +26,10 @@ export default function TableUser({
   sortOrder,
   onUpdateUser,
 }) {
-  // State để quản lý inline editing
-  const [editingCell, setEditingCell] = useState(null); // { rowIndex, column }
-  const [editValue, setEditValue] = useState("");
-  const [validationError, setValidationError] = useState("");
+  // State để quản lý row editing
+  const [editingRow, setEditingRow] = useState(null); // rowIndex
+  const [editValues, setEditValues] = useState({});
+  const [validationErrors, setValidationErrors] = useState({});
 
   // Validation functions
   const validateField = (column, value) => {
@@ -57,130 +57,197 @@ export default function TableUser({
           return "Vai trò phải là Admin, User hoặc Guest";
         }
         break;
+      case "ngaySinh":
+        if (!trimmedValue) {
+          return "Ngày sinh không được để trống";
+        }
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(trimmedValue)) {
+          return "Định dạng ngày sinh phải là YYYY-MM-DD";
+        }
+        const date = new Date(trimmedValue);
+        if (isNaN(date.getTime())) {
+          return "Ngày sinh không hợp lệ";
+        }
+        const currentDate = new Date();
+        if (date > currentDate) {
+          return "Ngày sinh không thể trong tương lai";
+        }
+        const minDate = new Date("1900-01-01");
+        if (date < minDate) {
+          return "Ngày sinh không thể trước năm 1900";
+        }
+        break;
       default:
         break;
     }
     return "";
   };
 
-  const startEdit = (rowIndex, column, currentValue) => {
-    setEditingCell({ rowIndex, column });
-    setEditValue(currentValue);
-    setValidationError("");
+  const startEditRow = (rowIndex) => {
+    const rowData = rows[rowIndex];
+    const initialValues = {
+      hoTen: rowData.originalData?.hoTen || "",
+      email: rowData.originalData?.email || "",
+      vaiTro: rowData.originalData?.vaiTro || "",
+      ngaySinh: rowData.originalData?.ngaySinh || "",
+    };
+    setEditingRow(rowIndex);
+    setEditValues(initialValues);
+    setValidationErrors({});
   };
 
-  const cancelEdit = () => {
-    setEditingCell(null);
-    setEditValue("");
-    setValidationError("");
+  const cancelEditRow = () => {
+    setEditingRow(null);
+    setEditValues({});
+    setValidationErrors({});
   };
 
-  const saveEdit = (rowIndex, column) => {
-    const trimmedValue = editValue.trim();
-    const error = validateField(column, trimmedValue);
+  const validateAllFields = () => {
+    const errors = {};
+    const editableFields = ["hoTen", "email", "vaiTro", "ngaySinh"];
 
-    if (error) {
-      setValidationError(error);
+    editableFields.forEach((field) => {
+      const error = validateField(field, editValues[field] || "");
+      if (error) {
+        errors[field] = error;
+      }
+    });
+
+    return errors;
+  };
+
+  const saveEditRow = () => {
+    const errors = validateAllFields();
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
 
-    if (onUpdateUser && trimmedValue !== "") {
-      const rowData = rows[rowIndex];
+    if (onUpdateUser) {
+      const rowData = rows[editingRow];
       const updatedUser = {
         ...rowData.originalData,
-        [column]: trimmedValue,
+        ...editValues,
       };
       onUpdateUser(updatedUser);
     }
-    setEditingCell(null);
-    setEditValue("");
-    setValidationError("");
+    setEditingRow(null);
+    setEditValues({});
+    setValidationErrors({});
   };
 
-  const handleKeyPress = (event, rowIndex, column) => {
-    if (event.key === "Enter") {
-      saveEdit(rowIndex, column);
-    } else if (event.key === "Escape") {
-      cancelEdit();
+  const handleInputChange = (field, value) => {
+    setEditValues((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+    // Clear validation error for this field when user types
+    if (validationErrors[field]) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [field]: "",
+      }));
     }
   };
 
-  const renderEditableCell = (rowIndex, column, value, originalValue) => {
-    const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.column === column;
-    const isEditableField = column === "hoTen" || column === "email" || column === "vaiTro";
+  const handleKeyPress = (event) => {
+    if (event.key === "Enter") {
+      saveEditRow();
+    } else if (event.key === "Escape") {
+      cancelEditRow();
+    }
+  };
 
-    if (!isEditableField) {
+  const renderCell = (rowIndex, column, value) => {
+    const isRowEditing = editingRow === rowIndex;
+    const isEditableField = ["hoTen", "email", "vaiTro", "ngaySinh"].includes(column);
+
+    if (!isEditableField || !isRowEditing) {
       return value;
     }
 
-    if (isEditing) {
-      if (column === "vaiTro") {
-        return (
-          <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-            <FormControl size="small" sx={{ minWidth: 80 }}>
-              <Select
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={(e) => handleKeyPress(e, rowIndex, column)}
-                autoFocus
-              >
-                <MenuItem value="Admin">Admin</MenuItem>
-                <MenuItem value="User">User</MenuItem>
-                <MenuItem value="Guest">Guest</MenuItem>
-              </Select>
-            </FormControl>
-            <IconButton size="small" onClick={() => saveEdit(rowIndex, column)} color="success">
-              <Check fontSize="small" />
-            </IconButton>
-            <IconButton size="small" onClick={cancelEdit} color="error">
-              <Close fontSize="small" />
-            </IconButton>
-          </div>
-        );
-      } else {
-        return (
-          <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-              <TextField
-                size="small"
-                value={editValue}
-                onChange={(e) => setEditValue(e.target.value)}
-                onKeyDown={(e) => handleKeyPress(e, rowIndex, column)}
-                onBlur={() => saveEdit(rowIndex, column)}
-                autoFocus
-                fullWidth
-                error={!!validationError}
-                helperText={validationError}
-                sx={{ minWidth: "120px" }}
-              />
-              <IconButton size="small" onClick={() => saveEdit(rowIndex, column)} color="success">
-                <Check fontSize="small" />
-              </IconButton>
-              <IconButton size="small" onClick={cancelEdit} color="error">
-                <Close fontSize="small" />
-              </IconButton>
-            </div>
-          </div>
-        );
-      }
+    // Render editable inputs when row is in edit mode
+    if (column === "vaiTro") {
+      return (
+        <FormControl size="small" fullWidth>
+          <Select
+            value={editValues[column] || ""}
+            onChange={(e) => handleInputChange(column, e.target.value)}
+            onKeyDown={handleKeyPress}
+            error={!!validationErrors[column]}
+          >
+            <MenuItem value="Admin">Admin</MenuItem>
+            <MenuItem value="User">User</MenuItem>
+            <MenuItem value="Guest">Guest</MenuItem>
+          </Select>
+          {validationErrors[column] && (
+            <MDTypography variant="caption" color="error" sx={{ fontSize: "0.75rem", mt: 0.5 }}>
+              {validationErrors[column]}
+            </MDTypography>
+          )}
+        </FormControl>
+      );
+    } else if (column === "ngaySinh") {
+      return (
+        <div>
+          <TextField
+            type="date"
+            size="small"
+            fullWidth
+            value={editValues[column] || ""}
+            onChange={(e) => handleInputChange(column, e.target.value)}
+            onKeyDown={handleKeyPress}
+            error={!!validationErrors[column]}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+          {validationErrors[column] && (
+            <MDTypography variant="caption" color="error" sx={{ fontSize: "0.75rem", mt: 0.5 }}>
+              {validationErrors[column]}
+            </MDTypography>
+          )}
+        </div>
+      );
+    } else {
+      return (
+        <div>
+          <TextField
+            size="small"
+            fullWidth
+            value={editValues[column] || ""}
+            onChange={(e) => handleInputChange(column, e.target.value)}
+            onKeyDown={handleKeyPress}
+            error={!!validationErrors[column]}
+          />
+          {validationErrors[column] && (
+            <MDTypography variant="caption" color="error" sx={{ fontSize: "0.75rem", mt: 0.5 }}>
+              {validationErrors[column]}
+            </MDTypography>
+          )}
+        </div>
+      );
+    }
+  };
+
+  const renderActionsCell = (rowIndex) => {
+    const isRowEditing = editingRow === rowIndex;
+
+    if (!isRowEditing) {
+      return null;
     }
 
     return (
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-          cursor: "pointer",
-          padding: "4px",
-          borderRadius: "4px",
-          "&:hover": {
-            backgroundColor: "#f5f5f5",
-          },
-        }}
-        onClick={() => startEdit(rowIndex, column, originalValue)}
-      >
-        {value}
+      <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+        <IconButton size="small" onClick={saveEditRow} color="success">
+          <Check fontSize="small" />
+        </IconButton>
+        <IconButton size="small" onClick={cancelEditRow} color="error">
+          <Close fontSize="small" />
+        </IconButton>
       </div>
     );
   };
@@ -247,13 +314,42 @@ export default function TableUser({
     <TableContainer component={Paper} elevation={0}>
       <Table sx={{ minWidth: 650 }}>
         <TableHead sx={{ width: "100%", display: "table-header-group" }}>
-          <TableRow>{columns.map((column, index) => renderSortableHeader(column, index))}</TableRow>
+          <TableRow>
+            {columns
+              .filter((column) => {
+                // Ẩn cột "Thao Tác" khi có row đang edit
+                if (column.accessor === "action" && editingRow !== null) {
+                  return false;
+                }
+                return true;
+              })
+              .map((column, index) => renderSortableHeader(column, index))}
+            {/* Chỉ hiện cột "Hành động" khi có row đang edit */}
+            {editingRow !== null && (
+              <TableCell
+                align="center"
+                sx={{
+                  minWidth: "160px",
+                  borderBottom: "1px solid #e0e0e0",
+                  backgroundColor: "#f8f9fa",
+                  fontWeight: "bold",
+                  fontSize: "0.875rem",
+                  textTransform: "uppercase",
+                  color: "#6c757d",
+                  padding: "0.65rem",
+                }}
+              >
+                Hành động
+              </TableCell>
+            )}
+          </TableRow>
         </TableHead>
         <TableBody>
           {rows.length > 0 ? (
             rows.map((row, rowIndex) => (
               <TableRow
                 key={rowIndex}
+                onDoubleClick={() => startEditRow(rowIndex)}
                 sx={{
                   "&:hover": {
                     backgroundColor: "#f5f5f5",
@@ -261,31 +357,57 @@ export default function TableUser({
                   "&:last-child td": {
                     borderBottom: "none",
                   },
+                  cursor: editingRow !== rowIndex ? "pointer" : "default",
+                  backgroundColor: editingRow === rowIndex ? "#f0f8ff" : "transparent",
                 }}
               >
-                {columns.map((column, colIndex) => (
+                {columns
+                  .filter((column) => {
+                    // Ẩn cột "Thao Tác" khi có row đang edit
+                    if (column.accessor === "action" && editingRow !== null) {
+                      return false;
+                    }
+                    return true;
+                  })
+                  .map((column, colIndex) => (
+                    <TableCell
+                      key={colIndex}
+                      align={column.align}
+                      sx={{
+                        borderBottom: "1px solid #e0e0e0",
+                        padding: "16px",
+                        fontSize: "0.875rem",
+                      }}
+                    >
+                      {renderCell(rowIndex, column.accessor, row[column.accessor])}
+                    </TableCell>
+                  ))}
+                {/* Chỉ hiện cột "Hành động" khi có row đang edit */}
+                {editingRow !== null && (
                   <TableCell
-                    key={colIndex}
-                    align={column.align}
+                    align="center"
                     sx={{
                       borderBottom: "1px solid #e0e0e0",
                       padding: "16px",
                       fontSize: "0.875rem",
+                      width: "120px",
                     }}
                   >
-                    {renderEditableCell(
-                      rowIndex,
-                      column.accessor,
-                      row[column.accessor],
-                      row.originalData?.[column.accessor] || ""
-                    )}
+                    {renderActionsCell(rowIndex)}
                   </TableCell>
-                ))}
+                )}
               </TableRow>
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={columns.length} align="center" sx={{ padding: "40px" }}>
+              <TableCell
+                colSpan={
+                  columns.filter((column) => !(column.accessor === "action" && editingRow !== null))
+                    .length + (editingRow !== null ? 1 : 0)
+                }
+                align="center"
+                sx={{ padding: "40px" }}
+              >
                 <MDTypography variant="h6" color="text" sx={{ opacity: 0.6 }}>
                   {searchValue ? "Không tìm thấy người dùng nào phù hợp" : "Không có dữ liệu"}
                 </MDTypography>
