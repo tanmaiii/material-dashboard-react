@@ -54,23 +54,20 @@ export default function Preview({ data }) {
       <MDTypography variant="h6">Preview</MDTypography>
       <form
         onSubmit={handleSubmit}
-        style={{ display: "flex", flexDirection: "column", gap: 20, minHeight: "200px" }}
+        style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: "200px" }}
       >
         {data.content?.map((block, i) => {
+          if (block.type === "Header") {
+            return (
+              <MDTypography variant="h6" key={i}>
+                {block.props?.title || block.title || ""}
+              </MDTypography>
+            );
+          }
           if (block.type === "DropdownBlock") {
             const label = block.props?.label || block.label || "";
             const defaultValue = block.props?.defaultValue || block.defaultValue || "";
             const options = block.props?.options || block.options || [];
-
-            console.log(
-              `DropdownBlock ${i} - label:`,
-              label,
-              "defaultValue:",
-              defaultValue,
-              "options:",
-              options
-            );
-
             const fieldName = `${label}-${i}`;
             const currentValue = formValues[fieldName] || defaultValue;
 
