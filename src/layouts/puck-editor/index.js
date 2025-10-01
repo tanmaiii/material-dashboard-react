@@ -121,7 +121,6 @@ const config = {
                     marginBottom: "10px",
                   }}
                 >
-                  <Radio />
                   {o.value}
                 </div>
               ))}
